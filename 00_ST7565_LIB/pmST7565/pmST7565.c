@@ -116,9 +116,9 @@ void st7565_init(void){
 }
 
 void st7565_setPos(uint8_t y, uint8_t x){
-		st7565_interface_write(CMD,DISPLAY_PAGE_ADDRESS | ((y) & 0x0F));
-		st7565_interface_write(CMD,DISPLAY_COL_ADDRESS_MSB | ((x>>4) & 0x0F));
-		st7565_interface_write(CMD,DISPLAY_COL_ADDRESS_LSB | ((x) & 0x0F));
+	st7565_interface_write(CMD,DISPLAY_PAGE_ADDRESS | ((y) & 0x0F));
+	st7565_interface_write(CMD,DISPLAY_COL_ADDRESS_MSB | ((x>>4) & 0x0F));
+	st7565_interface_write(CMD,DISPLAY_COL_ADDRESS_LSB | ((x) & 0x0F));
 }
 
 void st7565_clr(void){
