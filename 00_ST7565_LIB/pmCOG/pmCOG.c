@@ -85,7 +85,6 @@ void cogPutLineX(uint8_t ypix, uint8_t xl, uint8_t xr){
 		#endif
 		curX++;
 	}
-
 }
 
 void cogGoTo(uint8_t y, uint8_t x){
