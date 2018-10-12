@@ -11,13 +11,14 @@
 
 #define METROSTYLE_FONT
 
-#define FONT_TEST
+//#define FONT_TEST
 
 void cogInit(void);
 void cogClr(void);
 void cogGoTo(uint8_t y, uint8_t x);
 uint8_t cogGetX(void);
 void cogPutChar(char c);
+void cogPutLineX(uint8_t ypix, uint8_t xl, uint8_t xr);
 
 #ifdef METROSTYLE_FONT
 uint8_t useFontMetrostyle(uint8_t height);

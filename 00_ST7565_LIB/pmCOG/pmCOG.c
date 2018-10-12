@@ -71,10 +71,29 @@ void cogClr(void){
 
 }
 
+void cogPutLineX(uint8_t ypix, uint8_t xl, uint8_t xr){
+	uint8_t bajt=0x00, line, bit;
+
+	line=ypix/8;
+	cogGoTo(line, xl);
+	bit= ypix-(line*8);
+	bajt= (1<<bit);
+
+	while(curX<xr && curX<131){
+		#ifdef LCD_ST7565
+			st7565_interface_write( DATA, bajt );
+		#endif
+		curX++;
+	}
+
+}
+
 void cogGoTo(uint8_t y, uint8_t x){
 	curX=x;
 	curY=y;
 	cogSetPos(curY,curX);
+
+
 }
 void cogSetPos(uint8_t y, uint8_t x){
 	#ifdef LCD_ST7565
@@ -100,7 +119,7 @@ void cogPutChar(char c){
 
 			for(x=0;x<fWidth+current_font.interCharPixels;x++){
 				if(ny==1){			// font na jednej stronie
-					if(!x) cogSetPos(curY, curX);
+					if(!x) cogGoTo(curY, curX);
 
 					if(x<fWidth) bajt = pgm_read_word( &data[ p++ ] ); else bajt=0;
 					#ifdef LCD_ST7565
@@ -108,7 +127,7 @@ void cogPutChar(char c){
 					#endif
 				}else{				// font na wielu stronach
 					for(y=0;y<ny;y++){
-						cogSetPos(curY+y, curX+x);
+						cogGoTo(curY+y, curX+x);
 
 						if(x<fWidth) bajt = pgm_read_word( &data[ p++ ] ); else bajt=0;
 						#ifdef LCD_ST7565
@@ -121,7 +140,7 @@ void cogPutChar(char c){
 		if(c==' '){
 			for(x=0;x<current_font.spacePixels;x++){
 				if(ny==1){
-					if(!x)cogSetPos(curY, curX);
+					if(!x)cogGoTo(curY, curX);
 
 					bajt = 0x00;
 					#ifdef LCD_ST7565
@@ -129,7 +148,7 @@ void cogPutChar(char c){
 					#endif
 				}else{
 					for(y=0;y<ny;y++){
-						cogSetPos(curY+y, curX+x);
+						cogGoTo(curY+y, curX+x);
 
 						bajt = 0x00;
 						#ifdef LCD_ST7565

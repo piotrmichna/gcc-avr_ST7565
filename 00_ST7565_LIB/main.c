@@ -30,6 +30,7 @@ int main(void){
 
 	while(1){
 		LED2_TOG;
+		cogPutLineX(4, 4, 128);
 
 		#ifdef FONT_TEST
 			cogFontPrint();
