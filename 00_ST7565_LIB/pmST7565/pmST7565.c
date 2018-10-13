@@ -189,3 +189,37 @@ void st7565_interface_write( uint8_t comand, uint8_t data ){
 	#endif
 	//OSC_TEST_TOG;
 }
+
+#if INTERFACE == 0
+
+uint8_t st7565_read_status(void){
+
+	uint8_t byte;
+	DDR(D0_PORT) = 0x00;
+
+	PORT( A0_PORT) &= ~(1<<A0_PIN);
+
+	PORT(CS_PORT) &= ~(1<<CS_PIN);
+
+	byte=PIN(D0_PORT);
+
+	DDR(D0_PORT) = 0xFF;
+
+	return byte;
+}
+
+uint8_t st7565_read_display(void){
+	uint8_t byte;
+		DDR(D0_PORT) = 0x00;
+
+		PORT( A0_PORT) |= (1<<A0_PIN);
+
+		PORT(CS_PORT) &= ~(1<<CS_PIN);
+
+		byte=PIN(D0_PORT);
+
+		DDR(D0_PORT) = 0xFF;
+
+		return byte;
+}
+#endif
