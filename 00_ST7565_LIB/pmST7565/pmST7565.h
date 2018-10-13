@@ -191,7 +191,6 @@ void st7565_setPos(uint8_t y, uint8_t x);
 void st7565_interface_write( uint8_t comand, uint8_t data );
 
 #if INTERFACE == 0
-
 uint8_t st7565_read_status(void);
 uint8_t st7565_read_display(void);
 #endif
