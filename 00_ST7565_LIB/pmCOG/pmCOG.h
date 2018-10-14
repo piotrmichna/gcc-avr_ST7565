@@ -15,6 +15,7 @@
 
 void cogInit(void);
 void cogClr(void);
+void cogInvertColor(uint8_t inv);
 void cogGoTo(uint8_t y, uint8_t x);
 uint8_t cogGetX(void);
 void cogPutChar(char c);

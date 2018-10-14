@@ -19,7 +19,7 @@
 #endif
 
 
-volatile uint8_t curX, curY;
+volatile uint8_t curX, curY,invert;
 
 FONT_INFO current_font;
 #ifdef FONT_TEST
@@ -71,6 +71,9 @@ void cogClr(void){
 
 }
 
+void cogInvertColor(uint8_t inv){
+	if(inv) invert=1; else invert=0;
+}
 void cogPutLineX(uint8_t ypix, uint8_t xl, uint8_t xr){
 	uint8_t bajt=0x00, line, bit;
 
@@ -121,7 +124,9 @@ void cogPutChar(char c){
 					if(!x) cogSetPos(curY, curX);
 
 					if(x<fWidth) bajt = pgm_read_word( &data[ p++ ] ); else bajt=0;
+					if(invert) bajt = ~bajt;
 					#ifdef LCD_ST7565
+
 						st7565_interface_write( DATA, bajt );
 					#endif
 				}else{				// font na wielu stronach
@@ -129,6 +134,7 @@ void cogPutChar(char c){
 						cogSetPos(curY+y, curX+x);
 
 						if(x<fWidth) bajt = pgm_read_word( &data[ p++ ] ); else bajt=0;
+						if(invert) bajt = ~bajt;
 						#ifdef LCD_ST7565
 							st7565_interface_write( DATA, bajt );
 						#endif
@@ -142,6 +148,7 @@ void cogPutChar(char c){
 					if(!x)cogSetPos(curY, curX);
 
 					bajt = 0x00;
+					if(invert) bajt = ~bajt;
 					#ifdef LCD_ST7565
 						st7565_interface_write( DATA, bajt );
 					#endif
@@ -150,6 +157,7 @@ void cogPutChar(char c){
 						cogSetPos(curY+y, curX+x);
 
 						bajt = 0x00;
+						if(invert) bajt = ~bajt;
 						#ifdef LCD_ST7565
 							st7565_interface_write( DATA, bajt );
 						#endif
@@ -254,7 +262,7 @@ uint8_t cogFontCharList(void){
 				curX=0;
 
 				curY+=n;
-
+				if (curY>1 && curY<3) cogInvertColor(1); else cogInvertColor(0);
 				cogPutChar(c++);
 			}else{
 				flag=0;
