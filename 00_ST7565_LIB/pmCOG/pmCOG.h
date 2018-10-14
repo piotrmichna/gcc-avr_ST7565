@@ -11,7 +11,7 @@
 
 #define METROSTYLE_FONT
 
-//#define FONT_TEST
+#define FONT_TEST
 
 void cogInit(void);
 void cogClr(void);
