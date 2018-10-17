@@ -111,7 +111,7 @@ const uint8_t Metrostyl8x8Dat[] PROGMEM = {
 	0x08,0x36,0x41,                               // char {  (123)
 	0xFF,                                         // char |  (124)
 	0x41,0x36,0x08,                               // char }  (125)
-#ifdef METROSTYLE_PL
+#ifdef METROSTYLE_8PL
 	0x24,0x4A,0x4B,0x4A,0x30,                     // char Ś  (140)
 	0x42,0x66,0x53,0x4A,0x46,0x42,                // char Ź  (143)
 	0x48,0x54,0x56,0x24,                          // char ś  (156)
@@ -230,7 +230,7 @@ const CHAR_INFO Metrostyl8x8Map[] PROGMEM = {
 	{ 3,377 },	// char {  (123)
 	{ 1,380 },	// char |  (124)
 	{ 3,381 },	// char }  (125)
-#ifdef METROSTYLE_PL
+#ifdef METROSTYLE_8PL
 	{ 0,0 },	// ~
 	{ 0,0 },	// 
 	{ 0,0 },	// €
@@ -356,10 +356,10 @@ const CHAR_INFO Metrostyl8x8Map[] PROGMEM = {
 const FONT_INFO Metrostyl8x8Font PROGMEM = {
 	8,	// Caracter height
 	'!',	// Start character
-#ifdef METROSTYLE_PL
+#ifdef METROSTYLE_8PL
 	243,	// Stop character
 #endif
-#ifndef METROSTYLE_PL
+#ifndef METROSTYLE_8PL
 	'}',	// Stop character
 #endif
 	1,	// number of pixels of interspace between characters
@@ -571,7 +571,7 @@ const uint8_t Metrostyle10x12Dat[] PROGMEM = {
 	0x80,0x00,0x78,0x1F,0x04,0x20,0x04,0x20,      // char {  (123)
 	0xFC,0x3F,                                    // char |  (124)
 	0x04,0x20,0x04,0x20,0x78,0x1F,0x80,0x00,      // char }  (125)
-#ifdef METROSTYLE_PL
+#ifdef METROSTYLE_12PL
 	0x30,0x0C,0x48,0x10,0x84,0x20,0x84,0x20,      // char Ś  (140)
 	0x86,0x20,0x85,0x20,0x08,0x11,0x10,0x0E,
 	0x04,0x38,0x04,0x24,0x04,0x22,0x04,0x21,      // char Ź  (143)
@@ -712,7 +712,7 @@ const CHAR_INFO Metrostyle10x12Map[] PROGMEM = {
 	{ 4,1186 },	// char {  (123)
 	{ 1,1194 },	// char |  (124)
 	{ 4,1196 },	// char }  (125)
-#ifdef METROSTYLE_PL
+#ifdef METROSTYLE_12PL
 	{ 0,0 },	// ~
 	{ 0,0 },	// 
 	{ 0,0 },	// €
@@ -837,7 +837,7 @@ const CHAR_INFO Metrostyle10x12Map[] PROGMEM = {
 const FONT_INFO Metrostyle10x12Font PROGMEM = {
 	16,	// Caracter height
 	'!',	// Start character
-#ifdef METROSTYLE_PL
+#ifdef METROSTYLE_12PL
 	243,	// Stop character
 #else
 	'}',	// Stop character

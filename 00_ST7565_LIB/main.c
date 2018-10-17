@@ -7,6 +7,7 @@
  *
  *      cup: Atmega328P
  *      F_CPU 14.7456 Mhz
+ *      https://www.youtube.com/watch?v=3Vc89HU6Q80
  */
 
 

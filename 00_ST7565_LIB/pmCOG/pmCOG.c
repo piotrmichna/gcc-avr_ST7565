@@ -74,6 +74,7 @@ void cogClr(void){
 void cogInvertColor(uint8_t inv){
 	if(inv) invert=1; else invert=0;
 }
+
 void cogPutLineX(uint8_t ypix, uint8_t xl, uint8_t xr){
 	uint8_t bajt=0x00, line, bit;
 
@@ -82,7 +83,7 @@ void cogPutLineX(uint8_t ypix, uint8_t xl, uint8_t xr){
 	bit= ypix-(line*8);
 	bajt= (1<<bit);
 
-	while(xl<xr && xl<131){
+	while(xl<xr && xl<LCD_COL_NUM){
 		#ifdef LCD_ST7565
 			st7565_interface_write( DATA, bajt );
 		#endif
@@ -251,11 +252,11 @@ uint8_t cogFontCharList(void){
 	while(c<=current_font.stopChar){
 		oldX=curX;
 		cogPutChar(c++);
-		if(curX>127){
+		if(curX>LCD_WIDTH-1){
 			c--;
 			curX=oldX;
-			while(curX<128){
-				cogPutChar('.');
+			while(curX<LCD_WIDTH){
+				cogPutChar(' ');
 			}
 
 			if(curY<LCD_PAGE_NUM-1){
@@ -271,7 +272,7 @@ uint8_t cogFontCharList(void){
 		}
 	}
 	if(n>1 && curY<LCD_PAGE_NUM-2){
-		while(curX<128){
+		while(curX<LCD_WIDTH){
 			cogPutChar('.');
 		}
 		curY+=n;

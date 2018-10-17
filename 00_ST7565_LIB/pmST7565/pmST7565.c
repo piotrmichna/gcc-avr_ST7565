@@ -75,7 +75,7 @@ void st7565_init(void){
 		PORT(RST_PORT) |= (1<<RST_PIN);
 	#endif
 
-	// (15) ADC Select
+	// (15) Common output mode select
 	st7565_interface_write(CMD,DISPLAY_SCAN_DIR_REVERSE);
 
 	// (8) ADC Select
