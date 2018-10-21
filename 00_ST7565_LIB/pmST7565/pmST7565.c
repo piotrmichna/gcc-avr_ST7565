@@ -16,7 +16,7 @@
 #include "pmST7565.h"
 
 
-#ifdef USE_BUFF == 1
+#if USE_BUFF == 1
 #define BUFF_PAGE_NUM (LCD_HEIGHT/8)
 TCOL st7565_buffer[BUFF_PAGE_NUM];
 #endif
@@ -118,7 +118,7 @@ void st7565_init(void){
 	// (1) Display ON/OFF
 	st7565_interface_write(CMD,DISPLAY_ON);
 
-#ifdef USE_BUFF == 1
+#if USE_BUFF == 1
 	for(uint8_t i=0; i<BUFF_PAGE_NUM;i++){
 		st7565_buffer[i].bg_color=LCD_BG_COLOR;
 	}
@@ -205,7 +205,7 @@ void st7565_interface_write( uint8_t comand, uint8_t data ){
 }
 
 
-#ifdef USE_BUFF == 1
+#if USE_BUFF == 1
 
 void st7565_PageBgColor_buff(uint8_t page, uint8_t color){
 	if(page<BUFF_PAGE_NUM){
@@ -214,16 +214,32 @@ void st7565_PageBgColor_buff(uint8_t page, uint8_t color){
 }
 
 void st7565_ClrPage_buff(uint8_t page,uint8_t start, uint8_t stop){
+	if(stop==0 || stop>LCD_WIDTH) stop=LCD_WIDTH;
+
 	for(uint8_t i=start; i<stop;i++){
 		st7565_buffer[page].col[i]=st7565_buffer[page].bg_color;
 	}
 }
 void st7565_Clr_buff(void){
-	uint8_t byte;
-
 	for(uint8_t i=0;i<BUFF_PAGE_NUM;i++){
-		byte=st7565_buffer[i].bg_color;
 		st7565_ClrPage_buff(i,0,LCD_WIDTH);
 	}
+}
+
+void st7565_SendPageBuff_ToDisplay(uint8_t page, uint8_t start, uint8_t stop){
+	if(start>LCD_WIDTH-1) start = LCD_WIDTH-1;
+	if(stop==0 || stop>LCD_WIDTH) stop=LCD_WIDTH;
+
+	st7565_setPos(page, start);
+	for (uint8_t i=start;i<stop;i++){
+		st7565_interface_write( DATA, st7565_buffer[page].col[i] );
+	}
+}
+
+void st7565_SendBuff_ToDisplay(void){
+	for(uint8_t i=0;i<BUFF_PAGE_NUM;i++){
+		st7565_SendPageBuff_ToDisplay(i,0,LCD_WIDTH);
+	}
+
 }
 #endif
