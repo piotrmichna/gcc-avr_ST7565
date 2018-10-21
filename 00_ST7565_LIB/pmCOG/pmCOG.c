@@ -273,7 +273,7 @@ uint8_t cogFontCharList(void){
 	}
 	if(n>1 && curY<LCD_PAGE_NUM-2){
 		while(curX<LCD_WIDTH){
-			cogPutChar('.');
+			cogPutChar(' ');
 		}
 		curY+=n;
 		curX=0;

@@ -9,6 +9,9 @@
 #ifndef MAC_H_
 #define MAC_H_
 
+#define TRUE 1
+#define FALSE 0
+
 #define LED1_PIN PB1
 #define LED1_PORT B
 

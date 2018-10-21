@@ -14,7 +14,15 @@
 
 #define LCD_ST7565
 
-#define INTERFACE 0		// 0-PARALE 1-SERIAL
+
+#define LCD_WIDTH 128
+#define LCD_HEIGHT 64
+#define LCD_BG_COLOR 0x00
+
+#define USE_BUFF 1
+
+#define INTERFACE 1		// 0-PARALE 1-SERIAL
+
 // optional pin config
 #define USE_RST 1	// 0 - pullup pin RST to VCC
 #define USE_RD 1	// 0 - pullup pin RD to Vcc
@@ -107,8 +115,6 @@
 #define CMD		1
 #define DATA	0
 
-#define LCD_WIDTH 128
-#define LCD_HEIGHT 64
 
 #define LCD_PAGE_NUM 8
 #define LCD_COL_NUM 132
@@ -189,6 +195,18 @@ void st7565_clr(void);
 void st7565_clr_to_end(uint8_t y, uint8_t x);
 void st7565_setPos(uint8_t y, uint8_t x);
 void st7565_interface_write( uint8_t comand, uint8_t data );
+
+#ifdef USE_BUFF == 1
+typedef struct{
+	uint8_t col[LCD_WIDTH];
+	uint8_t bg_color;
+}TCOL;
+
+void st7565_PageBgColor_buff(uint8_t page, uint8_t color);
+void st7565_ClrPage_buff(uint8_t page,uint8_t start, uint8_t stop);
+void st7565_Clr_buff(void);
+
+#endif
 
 
 #endif /* PMST7565_PMST7565_H_ */
