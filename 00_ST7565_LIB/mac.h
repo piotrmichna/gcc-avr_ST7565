@@ -35,5 +35,25 @@
 #define DDR(x) SDDR(x)
 #define SDDR(x) (DDR##x)
 
+void intToStr(char * buf, int16_t num){
+	uint8_t i=0;
+	char temp[6];
+	if(num<0) {
+		*buf++='-';
+		num *=-1;
+	}
+	do {
+		temp[i] = num % 10 + 48;
+		num-= num % 10;
+		if(num>9) i++;
+	} while(num/=10);
+
+	while(i){
+		*buf++ =temp[i--];
+	}
+	*buf='\0';
+
+}
+
 
 #endif /* MAC_H_ */

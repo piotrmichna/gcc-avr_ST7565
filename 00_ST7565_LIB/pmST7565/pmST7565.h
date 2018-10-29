@@ -12,14 +12,11 @@
 #ifndef PMST7565_PMST7565_H_
 #define PMST7565_PMST7565_H_
 
-#define LCD_ST7565
 
 
 #define LCD_WIDTH 128
 #define LCD_HEIGHT 64
-#define LCD_BG_COLOR 0x00
 
-#define USE_BUFF 1
 
 #define INTERFACE 1		// 0-PARALE 1-SERIAL
 
@@ -196,17 +193,8 @@ void st7565_clr_to_end(uint8_t y, uint8_t x);
 void st7565_setPos(uint8_t y, uint8_t x);
 void st7565_interface_write( uint8_t comand, uint8_t data );
 
-#ifdef USE_BUFF == 1
-typedef struct{
-	uint8_t col[LCD_WIDTH];
-	uint8_t bg_color;
-}TCOL;
 
-void st7565_PageBgColor_buff(uint8_t page, uint8_t color);
-void st7565_ClrPage_buff(uint8_t page,uint8_t start, uint8_t stop);
-void st7565_Clr_buff(void);
 
-#endif
 
 
 #endif /* PMST7565_PMST7565_H_ */

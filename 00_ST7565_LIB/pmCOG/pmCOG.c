@@ -12,7 +12,24 @@
 
 #include "pmCOG.h"
 
+#ifdef LCD_ST7565
 #include "../pmST7565/pmST7565.h"
+#endif
+
+
+#if USE_BUFF == 1
+
+typedef struct{
+	uint8_t col[LCD_WIDTH];
+	uint8_t bg_color;
+}TCOL;
+
+#define LCD_BG_COLOR 0x00
+
+TCOL cog_buffer[LCD_PAGE_NUM];
+uint8_t buffCur_X;
+uint8_t buffCur_Y;
+#endif
 
 #ifdef METROSTYLE_FONT
 	#include "pmF_Metrostyle.h"
@@ -55,6 +72,14 @@ void cogInit(void){
 	#ifdef LCD_ST7565
 		st7565_init();
 	#endif
+
+#if USE_BUFF == 1
+	for(uint8_t i=0; i<LCD_PAGE_NUM;i++){
+		cog_buffer[i].bg_color=LCD_BG_COLOR;
+	}
+
+	st7565_Clr_buff();
+#endif
 
 	#ifdef METROSTYLE_FONT
 		setFotn( &Metrostyl8x8Font );
@@ -109,66 +134,67 @@ uint8_t cogGetX(void){
 }
 
 void cogPutChar(char c){
-		uint8_t fWidth = pgm_read_word( &current_font.charInfo[ c - current_font.startChar ].widthF );
+	uint8_t fWidth = pgm_read_word( &current_font.charInfo[ c - current_font.startChar ].widthF );
 
-		uint8_t * data = (uint8_t*)current_font.dat;
-		data+= pgm_read_word( &current_font.charInfo[ c - current_font.startChar ].map );
+	uint8_t * data = (uint8_t*)current_font.dat;
+	data+= pgm_read_word( &current_font.charInfo[ c - current_font.startChar ].map );
 
-		uint8_t x=0, y, ny, bajt, p=0;
-		ny=current_font.heightFont/8;
+	uint8_t x=0, y, ny, bajt, p=0;
+	ny=current_font.heightFont/8;
 
-		if (ny*8<current_font.heightFont) ny++;
-		if(c!=' ' && fWidth>0){
+	if (ny*8<current_font.heightFont) ny++;
+	if(c!=' ' && fWidth>0){
 
-			for(x=0;x<fWidth+current_font.interCharPixels;x++){
-				if(ny==1){			// font na jednej stronie
-					if(!x) cogSetPos(curY, curX);
+		for(x=0;x<fWidth+current_font.interCharPixels;x++){
+			if(ny==1){			// font na jednej stronie
+
+				if(!x) cogSetPos(curY, curX);
+
+				if(x<fWidth) bajt = pgm_read_word( &data[ p++ ] ); else bajt=0;
+				if(invert) bajt = ~bajt;
+
+				#ifdef LCD_ST7565
+
+					st7565_interface_write( DATA, bajt );
+				#endif
+			}else{				// font na wielu stronach
+				for(y=0;y<ny;y++){
+					cogSetPos(curY+y, curX+x);
 
 					if(x<fWidth) bajt = pgm_read_word( &data[ p++ ] ); else bajt=0;
 					if(invert) bajt = ~bajt;
 					#ifdef LCD_ST7565
-
 						st7565_interface_write( DATA, bajt );
 					#endif
-				}else{				// font na wielu stronach
-					for(y=0;y<ny;y++){
-						cogSetPos(curY+y, curX+x);
-
-						if(x<fWidth) bajt = pgm_read_word( &data[ p++ ] ); else bajt=0;
-						if(invert) bajt = ~bajt;
-						#ifdef LCD_ST7565
-							st7565_interface_write( DATA, bajt );
-						#endif
-					}
 				}
 			}
 		}
-		if(c==' '){
-			for(x=0;x<current_font.spacePixels;x++){
-				if(ny==1){
-					if(!x)cogSetPos(curY, curX);
+	}
+	if(c==' '){
+		for(x=0;x<current_font.spacePixels;x++){
+			if(ny==1){
+				if(!x)cogSetPos(curY, curX);
+
+				bajt = 0x00;
+				if(invert) bajt = ~bajt;
+				#ifdef LCD_ST7565
+					st7565_interface_write( DATA, bajt );
+				#endif
+			}else{
+				for(y=0;y<ny;y++){
+					cogSetPos(curY+y, curX+x);
 
 					bajt = 0x00;
 					if(invert) bajt = ~bajt;
 					#ifdef LCD_ST7565
 						st7565_interface_write( DATA, bajt );
 					#endif
-				}else{
-					for(y=0;y<ny;y++){
-						cogSetPos(curY+y, curX+x);
-
-						bajt = 0x00;
-						if(invert) bajt = ~bajt;
-						#ifdef LCD_ST7565
-							st7565_interface_write( DATA, bajt );
-						#endif
-					}
 				}
 			}
 		}
+	}
 
-	//}
-	curX+=x;
+curX+=x;
 }
 
 
@@ -282,6 +308,97 @@ uint8_t cogFontCharList(void){
 
 	return flag;
 }
+#endif
 
 
+#if USE_BUFF == 1
+
+void cogPageBgColor_buff(uint8_t page, uint8_t color){
+	if(page<LCD_PAGE_NUM){
+		cog_buffer[page].bg_color=color;
+	}
+}
+
+void cogClrPage_buff(uint8_t page,uint8_t start, uint8_t stop){
+	if(stop==0 || stop>LCD_WIDTH) stop=LCD_WIDTH;
+
+	for(uint8_t i=start; i<stop;i++){
+		cog_buffer[page].col[i]=cog_buffer[page].bg_color;
+	}
+}
+void cogClr_buff(void){
+	for(uint8_t i=0;i<LCD_PAGE_NUM;i++){
+		cogClrPage_buff(i,0,LCD_WIDTH);
+	}
+}
+
+void cogSendPageBuff_ToDisplay(uint8_t page, uint8_t start, uint8_t stop){
+	if(start>LCD_WIDTH-1) start = LCD_WIDTH-1;
+	if(stop==0 || stop>LCD_WIDTH) stop=LCD_WIDTH;
+#ifdef LCD_ST7565
+	st7565_setPos(page, start);
+	for (uint8_t i=start;i<stop;i++){
+		st7565_interface_write( DATA, cog_buffer[page].col[i] );
+	}
+#endif
+}
+
+void cogSendBuff_ToDisplay(void){
+	for(uint8_t i=0;i<LCD_PAGE_NUM;i++){
+		cogSendPageBuff_ToDisplay(i,0,LCD_WIDTH);
+	}
+}
+void cogSetLocateBuf(uint8_t y, uint8_t x){
+	buffCur_Y=y;
+	buffCur_X=x;
+}
+void cogPutCharBuff(char c){
+	uint8_t fWidth = pgm_read_word( &current_font.charInfo[ c - current_font.startChar ].widthF );
+
+	uint8_t * data = (uint8_t*)current_font.dat;
+	data+= pgm_read_word( &current_font.charInfo[ c - current_font.startChar ].map );
+
+	uint8_t x=0, y, ny, bajt, p=0;
+	ny=current_font.heightFont/8;
+
+	if (ny*8<current_font.heightFont) ny++;
+	if(c!=' ' && fWidth>0){
+		for(x=0;x<fWidth+current_font.interCharPixels;x++){
+			if(ny==1){			// font na jednej stronie
+				if(x<fWidth) bajt = pgm_read_word( &data[ p++ ] ); else bajt=cog_buffer[buffCur_Y].bg_color;
+				if(invert) bajt = ~bajt;
+
+				cog_buffer[buffCur_Y].col[buffCur_X+x]=bajt;
+
+			}else{				// font na wielu stronach
+				for(y=0;y<ny;y++){
+
+					if(x<fWidth) bajt = pgm_read_word( &data[ p++ ] ); else bajt=cog_buffer[buffCur_Y].bg_color;
+					if(invert) bajt = ~bajt;
+
+					cog_buffer[buffCur_Y+y].col[buffCur_X+x]=bajt;
+				}
+			}
+		}
+	}
+	if(c==' '){
+		for(x=0;x<current_font.spacePixels;x++){
+			if(ny==1){
+				bajt=cog_buffer[buffCur_Y].bg_color;
+				if(invert) bajt = ~bajt;
+
+				cog_buffer[buffCur_Y].col[buffCur_X+x]=bajt;
+
+			}else{
+				for(y=0;y<ny;y++){
+					bajt=cog_buffer[buffCur_Y].bg_color;
+					if(invert) bajt = ~bajt;
+
+					cog_buffer[buffCur_Y+y].col[buffCur_X+x]=bajt;
+				}
+			}
+		}
+	}
+	curX+=x;
+}
 #endif

@@ -9,9 +9,14 @@
 #ifndef PMCOG_PMCOG_H_
 #define PMCOG_PMCOG_H_
 
+
+#define LCD_ST7565
+
 #define METROSTYLE_FONT
 
 #define FONT_TEST
+
+#define USE_BUFF 1
 
 void cogInit(void);
 void cogClr(void);
@@ -29,4 +34,16 @@ uint8_t useFontMetrostyle(uint8_t height);
 	uint8_t cogFontCharList(void);
 	void cogFontPrint(void);
 #endif
+
+#if USE_BUFF == 1
+
+void cogPageBgColor_buff(uint8_t page, uint8_t color);
+void cogClrPage_buff(uint8_t page,uint8_t start, uint8_t stop);
+void cogClr_buff(void);
+
+void cogSendPageBuff_ToDisplay(uint8_t page, uint8_t start, uint8_t stop);
+void cogSendBuff_ToDisplay(void);
+
+#endif
+
 #endif /* PMCOG_PMCOG_H_ */
