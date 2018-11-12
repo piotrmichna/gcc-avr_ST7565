@@ -18,7 +18,6 @@
 
 #include "pmCOG/pmCOG.h"
 
-
 int main(void){
 	DDR( LED1_PORT ) |= (1<<LED1_PIN);
 	DDR( LED2_PORT ) |= (1<<LED2_PIN);
@@ -26,19 +25,20 @@ int main(void){
 	PORT(LED1_PORT) &= ~(1<<LED1_PIN);
 	PORT(LED2_PORT) &= ~(1<<LED2_PIN);
 
-
 	cogInit();
 
 	while(1){
 		LED2_TOG;
 
-
 		#ifdef FONT_TEST
-			cogFontPrint();
+			#if USE_BUFF == 0
+				cogFontPrint();
+			#else
+				cogFontPrintBuff();
+			#endif
 		#endif
-			//cogPutLineX(4, 4, 128);
+		_delay_ms(2500);
 
-		_delay_ms(5500);
 
 	}
 }

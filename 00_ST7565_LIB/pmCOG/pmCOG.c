@@ -16,6 +16,7 @@
 #include "../pmST7565/pmST7565.h"
 #endif
 
+#define LCD_BG_COLOR 0x00
 
 #if USE_BUFF == 1
 
@@ -24,11 +25,9 @@ typedef struct{
 	uint8_t bg_color;
 }TCOL;
 
-#define LCD_BG_COLOR 0x00
-
 TCOL cog_buffer[LCD_PAGE_NUM];
-uint8_t buffCur_X;
-uint8_t buffCur_Y;
+volatile uint8_t buffCur_X;
+volatile uint8_t buffCur_Y;
 #endif
 
 #ifdef METROSTYLE_FONT
@@ -36,7 +35,7 @@ uint8_t buffCur_Y;
 #endif
 
 
-volatile uint8_t curX, curY,invert;
+volatile uint8_t curX, curY, invert;
 
 FONT_INFO current_font;
 #ifdef FONT_TEST
@@ -62,11 +61,33 @@ FONT_INFO const * font_tab[FONT_NUM]={
 
 
 uint8_t cogFontCharList(void);
+#if USE_BUFF == 1
+uint8_t cogFontCharListBuff(void);
+#endif
 #endif
 
 void cogSetPos(uint8_t y, uint8_t x);
 void setFotn(const FONT_INFO * const font);
 
+void intToStr(char * buf, int16_t num){
+	uint8_t i=0;
+	char temp[6];
+	if(num<0) {
+		*buf++='-';
+		num *=-1;
+	}
+	do {
+		temp[i] = num % 10 + 48;
+		num-= num % 10;
+		if(num>9) i++;
+	} while(num/=10);
+
+	while(i){
+		*buf++ =temp[i--];
+	}
+	*buf='\0';
+
+}
 
 void cogInit(void){
 	#ifdef LCD_ST7565
@@ -78,7 +99,7 @@ void cogInit(void){
 		cog_buffer[i].bg_color=LCD_BG_COLOR;
 	}
 
-	st7565_Clr_buff();
+	cogClr_buff();
 #endif
 
 	#ifdef METROSTYLE_FONT
@@ -133,68 +154,80 @@ uint8_t cogGetX(void){
 	return curX;
 }
 
-void cogPutChar(char c){
-	uint8_t fWidth = pgm_read_word( &current_font.charInfo[ c - current_font.startChar ].widthF );
+uint8_t cogGetY(void){
+	return curY;
+}
 
-	uint8_t * data = (uint8_t*)current_font.dat;
-	data+= pgm_read_word( &current_font.charInfo[ c - current_font.startChar ].map );
+uint8_t cogPutChar(char c){
+	uint8_t fWidth;
+	uint8_t x=0, y, line_num, bajt;
 
-	uint8_t x=0, y, ny, bajt, p=0;
-	ny=current_font.heightFont/8;
+	line_num=current_font.heightFont/8;
+	if (line_num*8<current_font.heightFont) line_num++;
 
-	if (ny*8<current_font.heightFont) ny++;
-	if(c!=' ' && fWidth>0){
-
-		for(x=0;x<fWidth+current_font.interCharPixels;x++){
-			if(ny==1){			// font na jednej stronie
-
-				if(!x) cogSetPos(curY, curX);
-
-				if(x<fWidth) bajt = pgm_read_word( &data[ p++ ] ); else bajt=0;
+	if(c==' ') {	// char space print
+		fWidth=current_font.spacePixels;
+		for (x=0;x<fWidth;x++){
+			if(curX+x>=LCD_WIDTH) break;
+			for(y=0;y<line_num;y++){
+				if( (!x && !y) || line_num>1 ) cogSetPos(curY+y, curX+x);
+				bajt=LCD_BG_COLOR;
 				if(invert) bajt = ~bajt;
-
-				#ifdef LCD_ST7565
-
-					st7565_interface_write( DATA, bajt );
-				#endif
-			}else{				// font na wielu stronach
-				for(y=0;y<ny;y++){
-					cogSetPos(curY+y, curX+x);
-
-					if(x<fWidth) bajt = pgm_read_word( &data[ p++ ] ); else bajt=0;
-					if(invert) bajt = ~bajt;
+				if (curY+y<LCD_PAGE_NUM){
 					#ifdef LCD_ST7565
 						st7565_interface_write( DATA, bajt );
 					#endif
 				}
+
 			}
 		}
-	}
-	if(c==' '){
-		for(x=0;x<current_font.spacePixels;x++){
-			if(ny==1){
-				if(!x)cogSetPos(curY, curX);
-
-				bajt = 0x00;
-				if(invert) bajt = ~bajt;
-				#ifdef LCD_ST7565
-					st7565_interface_write( DATA, bajt );
-				#endif
+		curX+=x;
+		return 1; // space char print ok
+	}else{ // char print
+		if(c>=current_font.startChar && c<=current_font.stopChar){
+			fWidth = pgm_read_word( &current_font.charInfo[ c - current_font.startChar ].widthF );
+			if(curX+fWidth>=LCD_WIDTH){
+				for(x=0;x<fWidth;x++){
+					if(curX+x>=LCD_WIDTH) break;
+					for(y=0;y<line_num;y++){
+						if( (!x && !y) || line_num>1 ) cogSetPos(curY+y, curX+x);
+						bajt=LCD_BG_COLOR;
+						if(invert) bajt = ~bajt;
+						if (curY+y<LCD_PAGE_NUM){
+							#ifdef LCD_ST7565
+								st7565_interface_write( DATA, bajt );
+							#endif
+						}
+					}
+				}
+				curX+=x;
+				return 0;	// page to short to print;
 			}else{
-				for(y=0;y<ny;y++){
-					cogSetPos(curY+y, curX+x);
-
-					bajt = 0x00;
-					if(invert) bajt = ~bajt;
-					#ifdef LCD_ST7565
-						st7565_interface_write( DATA, bajt );
-					#endif
+				if(fWidth>0){
+					uint8_t p=0;
+					uint8_t * data = (uint8_t*)current_font.dat;
+					data+= pgm_read_word( &current_font.charInfo[ c - current_font.startChar ].map );
+					for(x=0;x<fWidth+current_font.interCharPixels;x++){
+						if(curX+x>=LCD_WIDTH) break;
+						for(y=0;y<line_num;y++){
+							if(x<fWidth) bajt = pgm_read_word( &data[ p++ ] ); else bajt=LCD_BG_COLOR;//cog_buffer[buffCur_Y].bg_color;
+							if( (!x && !y) || line_num>1 ) cogSetPos(curY+y, curX+x);
+							if(invert) bajt = ~bajt;
+							if (curY+y<LCD_PAGE_NUM){
+								#ifdef LCD_ST7565
+									st7565_interface_write( DATA, bajt );
+								#endif
+							}
+						}
+					}
 				}
 			}
+			curX+=x;
+			return 1; // char print ok
+		}else{
+			return 2; // not defined char in font
 		}
 	}
-
-curX+=x;
 }
 
 
@@ -249,7 +282,7 @@ uint8_t useFontMetrostyle(uint8_t height){
 void cogFontPrint(void){
 	static uint8_t font;
 	uint8_t flag;	// 1 - wyswietlono ostatin znak
-
+	st7565_clr();
 	cogGoTo(0,0);
 	while(font_tab[font]==0){
 		if(font<FONT_NUM-1) font++; else font=0;
@@ -267,7 +300,7 @@ void cogFontPrint(void){
 }
 uint8_t cogFontCharList(void){
 	static uint8_t c;
-	uint8_t flag=1, oldX,n=0;
+	uint8_t flag=1, char_flag=1, n=0;
 	if(!c){
 		c=current_font.startChar;
 	}
@@ -276,42 +309,111 @@ uint8_t cogFontCharList(void){
 	if(n*8<current_font.heightFont) n++;
 
 	while(c<=current_font.stopChar){
-		oldX=curX;
-		cogPutChar(c++);
-		if(curX>LCD_WIDTH-1){
-			c--;
-			curX=oldX;
-			while(curX<LCD_WIDTH){
-				cogPutChar(' ');
-			}
+		char_flag=cogPutChar(c);
+		if(!char_flag){
+			curX=0;
+			curY+=n;
+			if(curY<LCD_PAGE_NUM){
 
-			if(curY<LCD_PAGE_NUM-1){
-				curX=0;
-
-				curY+=n;
-				if (curY>1 && curY<3) cogInvertColor(1); else cogInvertColor(0);
-				cogPutChar(c++);
+				char_flag=cogPutChar(c);
 			}else{
 				flag=0;
 				break;
 			}
 		}
+		c++;
 	}
-	if(n>1 && curY<LCD_PAGE_NUM-2){
+	if(char_flag){
 		while(curX<LCD_WIDTH){
-			cogPutChar(' ');
+			char_flag=cogPutChar(' ');
 		}
 		curY+=n;
-		curX=0;
 	}
-	if(flag) c='\0';
 
+	if(flag) c='\0';
 	return flag;
 }
+
+	#if USE_BUFF == 1
+	void cogFontPrintBuff(void){
+		static uint8_t font;
+		uint8_t flag=0;	// 1 - wyswietlono ostatin znak
+
+		cogSetLocateBuf(0, 0);
+		while(font_tab[font]==0){
+			if(font<FONT_NUM-1) font++; else font=0;
+		}
+		setFotn( font_tab[font] );
+		//setFotn( &Metrostyle10x12Font );
+
+		flag=cogFontCharListBuff();
+
+		//st7565_clr_to_end(curY,curX);
+		cogClrPage_buff(buffCur_Y++, buffCur_X, LCD_WIDTH);
+		while(buffCur_Y<LCD_PAGE_NUM){
+			cogClrPage_buff(buffCur_Y++, 0, LCD_WIDTH);
+		}
+		cogSendBuff_ToDisplay();
+
+		if(flag){
+			if(++font==FONT_NUM) font=0;
+		}
+	}
+
+	uint8_t cogFontCharListBuff(void){
+		static uint8_t c;
+		uint8_t flag=1, oldX,n=0;
+		if(!c){
+			c=current_font.startChar;
+		}
+
+		n=current_font.heightFont/8;
+		if(n*8<current_font.heightFont) n++;
+
+		while(c<=current_font.stopChar){
+			oldX=buffCur_X;
+			cogPutCharBuff(c++);
+			if(buffCur_X>LCD_WIDTH-1){
+				c--;
+				buffCur_X=oldX;
+				while(buffCur_X<LCD_WIDTH){
+					cogPutCharBuff(' ');
+				}
+
+				if(buffCur_Y<LCD_PAGE_NUM-1){
+					buffCur_X=0;
+
+					buffCur_Y+=n;
+					if (buffCur_Y>1 && buffCur_Y<3) cogInvertColor(1); else cogInvertColor(0);
+					cogPutCharBuff(c++);
+				}else{
+					flag=0;
+					break;
+				}
+			}
+		}
+		if(n>1 && buffCur_Y<LCD_PAGE_NUM-2){
+			while(buffCur_X<LCD_WIDTH){
+				cogPutCharBuff(' ');
+			}
+			buffCur_Y+=n;
+			buffCur_X=0;
+		}
+		if(flag) c='\0';
+
+		return flag;
+	}
+	#endif
 #endif
 
 
 #if USE_BUFF == 1
+uint8_t cogGetBuffX(void){
+	return buffCur_X;
+}
+uint8_t cogGetBuffY(void){
+	return buffCur_Y;
+}
 
 void cogPageBgColor_buff(uint8_t page, uint8_t color){
 	if(page<LCD_PAGE_NUM){
@@ -352,53 +454,59 @@ void cogSetLocateBuf(uint8_t y, uint8_t x){
 	buffCur_Y=y;
 	buffCur_X=x;
 }
-void cogPutCharBuff(char c){
-	uint8_t fWidth = pgm_read_word( &current_font.charInfo[ c - current_font.startChar ].widthF );
+uint8_t cogPutCharBuff(char c){
+	uint8_t fWidth;
+	uint8_t x=0, y, line_num, bajt;
 
-	uint8_t * data = (uint8_t*)current_font.dat;
-	data+= pgm_read_word( &current_font.charInfo[ c - current_font.startChar ].map );
+	line_num=current_font.heightFont/8;
+	if (line_num*8<current_font.heightFont) line_num++;
 
-	uint8_t x=0, y, ny, bajt, p=0;
-	ny=current_font.heightFont/8;
-
-	if (ny*8<current_font.heightFont) ny++;
-	if(c!=' ' && fWidth>0){
-		for(x=0;x<fWidth+current_font.interCharPixels;x++){
-			if(ny==1){			// font na jednej stronie
-				if(x<fWidth) bajt = pgm_read_word( &data[ p++ ] ); else bajt=cog_buffer[buffCur_Y].bg_color;
-				if(invert) bajt = ~bajt;
-
-				cog_buffer[buffCur_Y].col[buffCur_X+x]=bajt;
-
-			}else{				// font na wielu stronach
-				for(y=0;y<ny;y++){
-
-					if(x<fWidth) bajt = pgm_read_word( &data[ p++ ] ); else bajt=cog_buffer[buffCur_Y].bg_color;
-					if(invert) bajt = ~bajt;
-
-					cog_buffer[buffCur_Y+y].col[buffCur_X+x]=bajt;
-				}
-			}
-		}
-	}
-	if(c==' '){
-		for(x=0;x<current_font.spacePixels;x++){
-			if(ny==1){
+	if(c==' ') {
+		fWidth=current_font.spacePixels;
+		for (x=0;x<fWidth;x++){
+			if(buffCur_X+x>=LCD_WIDTH) break;
+			for(y=0;y<line_num;y++){
 				bajt=cog_buffer[buffCur_Y].bg_color;
 				if(invert) bajt = ~bajt;
-
-				cog_buffer[buffCur_Y].col[buffCur_X+x]=bajt;
-
-			}else{
-				for(y=0;y<ny;y++){
-					bajt=cog_buffer[buffCur_Y].bg_color;
-					if(invert) bajt = ~bajt;
-
-					cog_buffer[buffCur_Y+y].col[buffCur_X+x]=bajt;
-				}
+				if (buffCur_Y+y<LCD_PAGE_NUM) cog_buffer[buffCur_Y+y].col[buffCur_X+x]=bajt;
 			}
 		}
+		buffCur_X+=x;
+		return 1; // space char print ok
+	}else{
+		if(c>=current_font.startChar && c<=current_font.stopChar){
+			fWidth = pgm_read_word( &current_font.charInfo[ c - current_font.startChar ].widthF );
+			if(buffCur_X+fWidth>=LCD_WIDTH){
+				for(x=0;x<fWidth;x++){
+					if(buffCur_X+x>=LCD_WIDTH) break;
+					for(y=0;y<line_num;y++){
+						bajt=cog_buffer[buffCur_Y].bg_color;
+						if(invert) bajt = ~bajt;
+						if (buffCur_Y+y<LCD_PAGE_NUM) cog_buffer[buffCur_Y+y].col[buffCur_X+x]=bajt;
+					}
+				}
+				buffCur_X+=x;
+				return 0;	// page to short to print;
+			}else{
+				if(fWidth>0){
+					uint8_t p=0;
+					uint8_t * data = (uint8_t*)current_font.dat;
+					data+= pgm_read_word( &current_font.charInfo[ c - current_font.startChar ].map );
+					for(x=0;x<fWidth+current_font.interCharPixels;x++){
+						if(buffCur_X+x>=LCD_WIDTH) break;
+						for(y=0;y<line_num;y++){
+							if(x<fWidth) bajt = pgm_read_word( &data[ p++ ] ); else bajt=0x00;//cog_buffer[buffCur_Y].bg_color;
+							if(invert) bajt = ~bajt;
+							if (buffCur_Y+y<LCD_PAGE_NUM) cog_buffer[buffCur_Y+y].col[buffCur_X+x]=bajt;
+						}
+					}
+				}
+			}
+			buffCur_X+=x;
+			return 1; // char print ok
+		}else{
+			return 2; // not defined char in font
+		}
 	}
-	curX+=x;
 }
 #endif
