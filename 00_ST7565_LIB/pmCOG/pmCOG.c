@@ -213,8 +213,36 @@ uint8_t cogPutChar(char c){
 		}
 	}
 }
-uint8_t cogPutString(char * buf){
-	return 1;
+
+
+uint8_t cogPutString(char * str){
+	uint8_t flag=1;
+	while(*str!='\0' && flag){
+		flag=cogPutChar(*str);
+		str++;
+	}
+	return flag;
+}
+
+uint8_t cogGetCharWidth(char c){
+	if(c==' '){
+		return current_font.spacePixels;
+	}else{
+		if(c>=current_font.startChar && c<=current_font.stopChar){
+			return pgm_read_word( &current_font.charInfo[ c - current_font.startChar ].widthF );
+		}else{
+			return 0;
+		}
+	}
+}
+uint8_t cogGetStringWidth(char * str){
+	uint8_t len=0;
+	while(*str!='\0'){
+		len+=cogGetCharWidth(*str);
+		str++;
+		if(str!='\0') len+=current_font.interCharPixels;
+	}
+	return len;
 }
 
 void setFotn(const FONT_INFO * const font){

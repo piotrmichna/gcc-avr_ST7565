@@ -25,8 +25,10 @@ void cogGoTo(uint8_t y, uint8_t x);
 uint8_t cogGetX(void);
 uint8_t cogGetY(void);
 uint8_t cogPutChar(char c);
-uint8_t cogPutString(char * buf);
+uint8_t cogPutString(char * str);
 
+uint8_t cogGetCharWidth(char c);
+uint8_t cogGetStringWidth(char * str);
 #ifdef METROSTYLE_FONT
 uint8_t useFontMetrostyle(uint8_t height);
 #endif
