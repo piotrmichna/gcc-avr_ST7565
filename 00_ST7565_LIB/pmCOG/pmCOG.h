@@ -18,6 +18,8 @@
 
 #define USE_BUFF 1
 
+void intToStr(char * buf, int16_t num);
+
 void cogInit(void);
 void cogClr(void);
 void cogInvertColor(uint8_t inv);

@@ -18,7 +18,12 @@
 
 #include "pmCOG/pmCOG.h"
 
-char tekst[]="dupa";
+char teksta[]="dupa";
+char tekstb[]="ok";
+char tekstc[]="czcionka";
+char * tekst[3]={ teksta, tekstb, tekstc };
+char intBuf[6];
+uint8_t n,len;
 
 int main(void){
 	DDR( LED1_PORT ) |= (1<<LED1_PIN);
@@ -28,6 +33,7 @@ int main(void){
 	PORT(LED2_PORT) &= ~(1<<LED2_PIN);
 
 	cogInit();
+	useFontMetrostyle(12);
 
 	while(1){
 		LED2_TOG;
@@ -41,7 +47,13 @@ int main(void){
 //		#endif
 		cogClr();
 		cogGoTo(0,5);
-		cogPutString(tekst);
+		if(n>2) n=0;
+		len=cogGetStringWidth(tekst[n]);
+		cogPutString(tekst[n++]);
+
+		intToStr(intBuf, len);
+		cogGoTo(4,5);
+		cogPutString(intBuf);
 		_delay_ms(2500);
 
 

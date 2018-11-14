@@ -38,6 +38,7 @@ volatile uint8_t buffCur_Y;
 volatile uint8_t curX, curY, invert;
 
 FONT_INFO current_font;
+
 #ifdef FONT_TEST
 #define FONT_NUM 4
 FONT_INFO const * font_tab[FONT_NUM]={
@@ -77,16 +78,18 @@ void intToStr(char * buf, int16_t num){
 		num *=-1;
 	}
 	do {
-		temp[i] = num % 10 + 48;
+		temp[i] = (num % 10) + 48;
 		num-= num % 10;
-		if(num>9) i++;
-	} while(num/=10);
+		num/=10;
+		i++;
+
+	} while(num);
 
 	while(i){
-		*buf++ =temp[i--];
-	}
+		*buf++ =temp[i-1];
+		i--;
+	};
 	*buf='\0';
-
 }
 
 void cogInit(void){
@@ -225,15 +228,17 @@ uint8_t cogPutString(char * str){
 }
 
 uint8_t cogGetCharWidth(char c){
+	uint8_t len;
 	if(c==' '){
-		return current_font.spacePixels;
+		len = current_font.spacePixels;
 	}else{
 		if(c>=current_font.startChar && c<=current_font.stopChar){
-			return pgm_read_word( &current_font.charInfo[ c - current_font.startChar ].widthF );
+			len = pgm_read_word( &current_font.charInfo[ c - current_font.startChar ].widthF );
 		}else{
-			return 0;
+			len = 0;
 		}
 	}
+	return len;
 }
 uint8_t cogGetStringWidth(char * str){
 	uint8_t len=0;
